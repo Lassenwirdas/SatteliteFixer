@@ -66,15 +66,32 @@ out what is broken and how to fix it.
 
 | Aspect        | Details                                                  |
 |---------------|----------------------------------------------------------|
-| Engine        | Unity                                                    |
-| XR            | OpenXR                                                   |
+| Engine        | Unity 6 (6000.6.6f1), URP                                |
+| XR            | OpenXR + XR Interaction Toolkit (VR Core template)       |
 | Platforms     | VR headset (player 1) + Windows PC (player 2)            |
 | Player count  | 2 (1× VR, 1× PC), asymmetric co-op                       |
 | Mission Control | MVP: canvas with async/timed updates; later: synchronous hub |
 
 ## Repository structure
 
-> The Unity project has not been created yet. Update this section once it exists.
+```
+SatteliteFixer/            repo root: README, CLAUDE.md, LICENSE, project slide
+└── SatelliteFixer/        Unity project (open this folder in Unity Hub)
+    ├── Assets/
+    ├── Packages/
+    └── ProjectSettings/
+```
+
+### Getting started
+
+1. Clone the repo.
+2. Install Unity **6000.6.6f1** via Unity Hub, including Android build support if you
+   target a standalone headset.
+3. In Unity Hub, choose **Add → Add project from disk** and select the `SatelliteFixer/`
+   **subfolder**, not the repo root.
+
+Unity creates `Library/`, `Temp/`, `Logs/` and `UserSettings/` on first open. They are
+ignored by git.
 
 ## Team
 
