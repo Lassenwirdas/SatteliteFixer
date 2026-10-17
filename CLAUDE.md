@@ -14,10 +14,15 @@ and `image.png` (the original project slide).
 
 ## Status
 
-- Only README, LICENSE and the project slide so far. The Unity project still has to be created.
+- The Unity project exists in `SatelliteFixer/`, created from the VR Core template.
+  It contains only template content so far (sample scenes, XRI/XR Hands samples).
+  No game code yet.
+
 ## Decisions
 
-- **XR stack:** OpenXR.
+- **Engine:** Unity 6000.6.6f1 with URP.
+- **XR stack:** OpenXR + XR Interaction Toolkit 3.x (VR Core template). The Meta and
+  Android XR OpenXR packages are installed.
 - **MVP Mission Control:** a plain canvas on the PC that mirrors game information
   **asynchronously / on timed updates**, not in real time. Example: a checklist that
   mission control reads out to the VR player. Feedback comes **verbally from the VR
@@ -32,17 +37,18 @@ and `image.png` (the original project slide).
 
 Settle these with the team, and don't guess them in code:
 
-- Unity version and render pipeline (URP is the usual pick for VR).
-- Target VR headset, and whether the XR Interaction Toolkit is used on top of OpenXR.
+- Target VR headset (standalone Quest/Android XR vs. PC VR via Link/SteamVR).
 - How the MVP canvas gets its data: same machine as the VR app (e.g. second display/window)
   or a separate PC (e.g. shared file, simple HTTP endpoint), and the update interval.
 
 ## Conventions
 
-- Put the Unity project at the repo root (`Assets/`, `Packages/`, `ProjectSettings/`) unless
-  the team decides otherwise. Update the README "Repository structure" section when it lands.
-- Never commit `Library/`, `Temp/`, `Logs/`, `obj/`, `Build*/` or `UserSettings/`
-  (covered by `.gitignore`).
+- The Unity project lives in `SatelliteFixer/` (not the repo root). All Unity paths are
+  relative to that folder, e.g. `SatelliteFixer/Assets/...`.
+- Never commit `SatelliteFixer/Library/`, `Temp/`, `Logs/`, `obj/`, `Build*/` or
+  `UserSettings/`, nor IDE files (`*.sln`, `*.slnx`, `*.csproj`). `.gitignore` covers them.
+  Its Unity patterns are anchored to `/SatelliteFixer/`, so folders with the same name
+  inside `Assets/` (e.g. `Assets/CompositionLayers/UserSettings`) are still tracked.
 - Always commit `.meta` files together with their assets.
 - Use force-text asset serialization and visible meta files (Unity's defaults) so
   scenes and prefabs can be diffed and merged.
