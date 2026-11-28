@@ -6,7 +6,7 @@ using UnityEngine;
 namespace SatelliteFixer.Operator
 {
     /// <summary>
-    /// Runs the scenarios on the PC app (AP 5.1): picks a satellite, triggers random faults
+    /// Runs the missions on the PC app (AP 5.1): triggers random faults on the chosen satellite
     /// and checks the repair actions the astronaut sends.
     /// </summary>
     public class ScenarioManager : MonoBehaviour
@@ -14,55 +14,62 @@ namespace SatelliteFixer.Operator
         [SerializeField, Tooltip("Game state owner that this manager writes to.")]
         GameStateManager m_GameStateManager;
 
-        [SerializeField, Tooltip("Satellites available as scenarios, in play order.")]
+        [SerializeField, Tooltip("Satellites available as missions, in the order shown in the lobby.")]
         List<SatelliteDefinition> m_Satellites = new List<SatelliteDefinition>();
-
-        [SerializeField, Min(1), Tooltip("How many faults are triggered per scenario (capped by the satellite's possible faults).")]
-        int m_FaultsPerScenario = 1;
 
         /// <summary>
         /// Raised after a repair attempt was checked. The bool is true if it fixed a fault.
         /// </summary>
         public event Action<RepairAttempt, bool> RepairChecked;
 
+        /// <summary>
+        /// The scenario manager of the running session, for scene objects that cannot reference it directly.
+        /// </summary>
+        public static ScenarioManager Instance { get; private set; }
+
         public IReadOnlyList<SatelliteDefinition> Satellites => m_Satellites;
 
         /// <summary>
-        /// Satellite of the running scenario, or null in the lobby.
+        /// Satellite of the running mission, or null in the lobby.
         /// Derived from the game state, so it is also correct after loading a saved state.
         /// </summary>
         public SatelliteDefinition CurrentSatellite => FindSatellite(m_GameStateManager.State.satelliteId);
 
         void OnEnable()
         {
+            Instance = this;
             if (m_GameStateManager != null && m_GameStateManager.Sync != null)
                 m_GameStateManager.Sync.RepairAttemptReceived += OnRepairAttemptReceived;
         }
 
         void OnDisable()
         {
+            if (Instance == this)
+                Instance = null;
+
             if (m_GameStateManager != null && m_GameStateManager.Sync != null)
                 m_GameStateManager.Sync.RepairAttemptReceived -= OnRepairAttemptReceived;
         }
 
         /// <summary>
-        /// Starts the scenario for the satellite at the given index. Can be wired to a UI button.
+        /// Rolls the faults for the given satellite and switches the game state to <see cref="ScenarioPhase.Mission"/>.
         /// </summary>
-        public void StartScenario(int satelliteIndex)
+        public void BeginMission(string satelliteId, int faultCount)
         {
-            if (satelliteIndex < 0 || satelliteIndex >= m_Satellites.Count || m_Satellites[satelliteIndex] == null)
+            var satellite = FindSatellite(satelliteId);
+            if (satellite == null)
             {
-                Debug.LogWarning($"No satellite at index {satelliteIndex}.", this);
-                return;
+                Debug.LogWarning($"Unknown satellite '{satelliteId}', starting the mission without faults.", this);
             }
 
-            var satellite = m_Satellites[satelliteIndex];
-            var faults = PickRandomFaults(satellite, m_FaultsPerScenario);
+            var faults = satellite != null ? PickRandomFaults(satellite, faultCount) : new List<FaultDefinition>();
 
             m_GameStateManager.Modify(state =>
             {
-                state.phase = ScenarioPhase.Repair;
-                state.satelliteId = satellite.Id;
+                state.phase = ScenarioPhase.Mission;
+                state.satelliteId = satelliteId;
+                state.missionTime = 0f;
+                state.paused = false;
                 state.faults.Clear();
                 foreach (var fault in faults)
                 {
@@ -74,11 +81,6 @@ namespace SatelliteFixer.Operator
                     });
                 }
             });
-        }
-
-        public void StartRandomScenario()
-        {
-            StartScenario(UnityEngine.Random.Range(0, m_Satellites.Count));
         }
 
         public SatelliteDefinition FindSatellite(string satelliteId)
@@ -99,7 +101,7 @@ namespace SatelliteFixer.Operator
             }
 
             // Partial Fisher-Yates shuffle: the first `count` entries end up random and distinct.
-            count = Mathf.Min(count, candidates.Count);
+            count = Mathf.Clamp(count, 0, candidates.Count);
             for (var i = 0; i < count; i++)
             {
                 var j = UnityEngine.Random.Range(i, candidates.Count);
@@ -113,7 +115,7 @@ namespace SatelliteFixer.Operator
         {
             var state = m_GameStateManager.State;
             var satellite = CurrentSatellite;
-            if (state.phase != ScenarioPhase.Repair || satellite == null)
+            if (state.phase != ScenarioPhase.Mission || satellite == null)
                 return;
 
             var faultIndex = state.faults.FindIndex(fault =>
@@ -127,7 +129,7 @@ namespace SatelliteFixer.Operator
                 {
                     s.faults[faultIndex].status = FaultStatus.Repaired;
                     if (s.AllFaultsRepaired)
-                        s.phase = ScenarioPhase.Completed;
+                        s.phase = ScenarioPhase.Debrief;
                 });
             }
 

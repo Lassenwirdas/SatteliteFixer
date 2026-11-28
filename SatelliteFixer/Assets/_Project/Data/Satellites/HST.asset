@@ -1,0 +1,21 @@
+%YAML 1.1
+%TAG !u! tag:unity3d.com,2011:
+--- !u!114 &11400000
+MonoBehaviour:
+  m_ObjectHideFlags: 0
+  m_CorrespondingSourceObject: {fileID: 0}
+  m_PrefabInstance: {fileID: 0}
+  m_PrefabAsset: {fileID: 0}
+  m_GameObject: {fileID: 0}
+  m_Enabled: 1
+  m_EditorHideFlags: 0
+  m_Script: {fileID: 11500000, guid: 3110a631c1794a1e9fdd49fe8086360b, type: 3}
+  m_Name: HST
+  m_EditorClassIdentifier: Assembly-CSharp::SatelliteFixer.Core.SatelliteDefinition
+  m_Id: hst
+  m_DisplayName: Hubble (HST)
+  m_Mission: "NASA / ESA \u2013 Hubble Space Telescope"
+  m_HandbookText: Das Hubble-Weltraumteleskop beobachtet seit 1990 das Universum aus der Erdumlaufbahn.
+  m_ModelPrefab: {fileID: 334196633439700805, guid: e1f3a4da8862a6e4098a10a8ab687c26, type: 3}
+  m_Sensors: []
+  m_PossibleFaults: []
