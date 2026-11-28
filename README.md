@@ -89,11 +89,16 @@ SatteliteFixer/                    repo root: README, CLAUDE.md, LICENSE, concep
 └── SatelliteFixer/                Unity project (open this folder in Unity Hub)
     ├── Assets/
     │   ├── _Project/              our own content
+    │   │   ├── Data/Satellites/   SatelliteDefinition assets (SMILE, Mars Express, HST)
+    │   │   ├── Prefabs/           Session prefab (network + session, DontDestroyOnLoad)
+    │   │   ├── Scenes/            Lobby, Operator, Astronaut
     │   │   └── Scripts/
     │   │       ├── Core/          shared game state model (satellites, sensors, faults)
-    │   │       ├── Network/       game state sync (transport-independent)
-    │   │       ├── Operator/      PC app: game state, scenarios, mission control UI
-    │   │       └── Astronaut/     VR app: satellite spawning, repairable sensors
+    │   │       ├── Network/       game state sync, Netcode transport, LAN discovery
+    │   │       ├── Operator/      PC app: game state, missions, mission control UI
+    │   │       ├── Astronaut/     VR app: satellite spawning, repairable sensors, status
+    │   │       └── Session/       role, scene flow, bootstrap, smoke test
+    │   ├── Models/, Prefabs/, …   satellite and sensor models from the team
     │   └── …                      template content (VRTemplateAssets, Samples, XR, …)
     ├── Packages/
     └── ProjectSettings/
@@ -105,15 +110,34 @@ SatteliteFixer/                    repo root: README, CLAUDE.md, LICENSE, concep
   ScriptableObjects (create them via *Assets → Create → SatelliteFixer*). `GameState`
   is the plain, serializable state that both apps share.
 - **Network:** gameplay code only talks to `GameStateSync`.
+  - `NetcodeGameStateSync` sends the game state over Netcode for GameObjects + Unity Transport
+    in the LAN (named messages, no NetworkObjects, Netcode scene management off).
+  - `LanDiscovery` lets the Quest find the PC host via UDP broadcast.
   - `LocalGameStateSync` is a loopback for testing both roles in one scene in the editor.
-  - The real network transport (AP 3) will be a second implementation of `GameStateSync`.
+- **Session:**
+  - `Session` picks the role (PC = operator/host, Quest = astronaut/client) and starts the network.
+  - `SceneFlowController` loads the right scene for each phase:
+    Lobby → Loading → Mission → Debrief → Lobby.
+  - `SessionBootstrap` in every scene creates the session prefab, so any scene can be played directly.
 - **Operator (host):**
   - `GameStateManager` owns the state, saves it locally and publishes every change.
-  - `ScenarioManager` starts scenarios, picks random faults and checks repair attempts.
-  - `OperatorStatusView` and `HandbookView` are first, minimal UIs.
+  - `MissionFlow` drives the phases, the mission clock (max. 15 min) and pausing when the astronaut drops.
+  - `ScenarioManager` picks random faults and checks repair attempts.
+  - `OperatorLobbyView`, `OperatorMissionHud`, `OperatorStatusView` and `HandbookView` are first, minimal UIs.
 - **Astronaut (client):**
   - `SatelliteSpawner` spawns the model of the current satellite.
   - `RepairableSensor` sits on a sensor of the model. It reacts to faults and sends repair actions, e.g. from an XRI interactable.
+  - `AstronautStatusView` shows connection and mission status in VR.
+
+### Testing host and client
+
+- **In the editor:** open *Window → Multiplayer → Multiplayer Play Mode* and activate a virtual
+  player. The main editor becomes the operator, the virtual player the astronaut. Press Play
+  in the `Lobby` scene.
+- **Quest + PC:** both in the same network. Start the PC build first; the Quest finds it
+  automatically. If discovery is blocked, enter the PC's IP (shown in the PC lobby) as
+  *Fixed Host Address* on the `Session` prefab and rebuild the Quest app (an IP keypad in VR is still open).
+- **Automated:** see the smoke test command in `CLAUDE.md`.
 
 ### Getting started
 

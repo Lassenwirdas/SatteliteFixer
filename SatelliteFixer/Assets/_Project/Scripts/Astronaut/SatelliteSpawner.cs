@@ -11,7 +11,7 @@ namespace SatelliteFixer.Astronaut
     /// </summary>
     public class SatelliteSpawner : MonoBehaviour
     {
-        [SerializeField, Tooltip("Sync to receive the game state from the host.")]
+        [SerializeField, Tooltip("Sync to receive the game state from the host. Uses the session's one if empty.")]
         GameStateSync m_Sync;
 
         [SerializeField, Tooltip("All satellites that can be played, to look up the model by ID.")]
@@ -25,6 +25,9 @@ namespace SatelliteFixer.Astronaut
 
         void OnEnable()
         {
+            if (m_Sync == null)
+                m_Sync = GameStateSync.Active;
+
             if (m_Sync == null)
                 return;
 

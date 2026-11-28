@@ -13,14 +13,30 @@ namespace SatelliteFixer.Core
         /// <summary>Incremented on every change, so peers can ignore outdated updates.</summary>
         public int revision;
 
+        /// <summary>Drives the scene flow on both peers: Lobby → Loading → Mission → Debrief.</summary>
         public ScenarioPhase phase = ScenarioPhase.Lobby;
 
-        /// <summary>ID of the current <see cref="SatelliteDefinition"/>, empty in the lobby.</summary>
+        /// <summary>Settings chosen in the lobby for the next or current mission.</summary>
+        public MissionSettings settings = new MissionSettings();
+
+        /// <summary>ID of the <see cref="SatelliteDefinition"/> of the running mission, empty in the lobby.</summary>
         public string satelliteId = string.Empty;
 
         public List<FaultInstance> faults = new List<FaultInstance>();
 
-        /// <summary>True if every fault of the current scenario has been repaired.</summary>
+        /// <summary>True while the VR app is connected to the host.</summary>
+        public bool astronautConnected;
+
+        /// <summary>True once the VR app has loaded its mission scene (set during <see cref="ScenarioPhase.Loading"/>).</summary>
+        public bool astronautReady;
+
+        /// <summary>Mission time in seconds. Only runs in <see cref="ScenarioPhase.Mission"/> while not paused.</summary>
+        public float missionTime;
+
+        /// <summary>True while the mission clock is stopped, e.g. because the astronaut lost the connection.</summary>
+        public bool paused;
+
+        /// <summary>True if every fault of the current mission has been repaired.</summary>
         public bool AllFaultsRepaired
         {
             get
@@ -37,7 +53,18 @@ namespace SatelliteFixer.Core
     }
 
     /// <summary>
-    /// A fault that is active in the current scenario.
+    /// What the operator picks in the lobby (or what a preset ScriptableObject provides).
+    /// </summary>
+    [Serializable]
+    public class MissionSettings
+    {
+        public string satelliteId = string.Empty;
+        public bool tutorial;
+        public int faultCount = 2;
+    }
+
+    /// <summary>
+    /// A fault that is active in the current mission.
     /// </summary>
     [Serializable]
     public class FaultInstance
@@ -63,9 +90,17 @@ namespace SatelliteFixer.Core
 
     public enum ScenarioPhase
     {
+        /// <summary>Both apps are in the lobby scene; the operator picks the mission.</summary>
         Lobby,
-        Repair,
-        Completed,
+
+        /// <summary>Both apps load their role scene; the host waits for the astronaut to report ready.</summary>
+        Loading,
+
+        /// <summary>The mission runs and the clock ticks.</summary>
+        Mission,
+
+        /// <summary>All faults repaired or time is up; both apps show the results.</summary>
+        Debrief,
     }
 
     public enum FaultStatus

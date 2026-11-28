@@ -11,22 +11,33 @@ namespace SatelliteFixer.Operator
     /// </summary>
     public class OperatorStatusView : MonoBehaviour
     {
-        [SerializeField, Tooltip("Game state owner to read from.")]
+        [SerializeField, Tooltip("Game state owner to read from. Uses the session's one if empty.")]
         GameStateManager m_GameStateManager;
 
-        [SerializeField, Tooltip("Scenario manager that knows the satellites.")]
+        [SerializeField, Tooltip("Scenario manager that knows the satellites. Uses the session's one if empty.")]
         ScenarioManager m_ScenarioManager;
 
         [SerializeField, Tooltip("Text the status is written to.")]
         TMP_Text m_Text;
 
-        void OnEnable()
+        void Start()
         {
-            if (m_GameStateManager != null && m_GameStateManager.Sync != null)
-                m_GameStateManager.Sync.StateReceived += Refresh;
+            if (m_GameStateManager == null)
+                m_GameStateManager = GameStateManager.Instance;
+            if (m_ScenarioManager == null)
+                m_ScenarioManager = ScenarioManager.Instance;
+
+            if (m_GameStateManager == null || m_ScenarioManager == null)
+            {
+                Debug.LogWarning("OperatorStatusView needs a running operator session.", this);
+                return;
+            }
+
+            m_GameStateManager.Sync.StateReceived += Refresh;
+            Refresh(m_GameStateManager.State);
         }
 
-        void OnDisable()
+        void OnDestroy()
         {
             if (m_GameStateManager != null && m_GameStateManager.Sync != null)
                 m_GameStateManager.Sync.StateReceived -= Refresh;
@@ -37,14 +48,14 @@ namespace SatelliteFixer.Operator
             var satellite = m_ScenarioManager.FindSatellite(state.satelliteId);
             var text = new StringBuilder();
 
-            if (state.phase == ScenarioPhase.Lobby || satellite == null)
+            if (state.phase == ScenarioPhase.Lobby || state.phase == ScenarioPhase.Loading || satellite == null)
             {
-                text.AppendLine("Waiting for a scenario to start.");
+                text.AppendLine("Warte auf den Missionsstart …");
             }
             else
             {
                 text.AppendLine($"{satellite.DisplayName} ({satellite.Mission})");
-                text.AppendLine(state.phase == ScenarioPhase.Completed ? "All systems nominal." : "Fault detected.");
+                text.AppendLine(state.phase == ScenarioPhase.Debrief ? "Alle Systeme nominal." : "Störung erkannt.");
                 text.AppendLine();
 
                 foreach (var fault in state.faults)
@@ -52,7 +63,7 @@ namespace SatelliteFixer.Operator
                     var definition = satellite.FindFault(fault.faultId);
                     var sensorName = definition != null && definition.AffectedSensor != null ? definition.AffectedSensor.DisplayName : fault.sensorId;
                     var symptom = definition != null ? definition.OperatorSymptom : string.Empty;
-                    var status = fault.status == FaultStatus.Repaired ? "OK" : "ERROR";
+                    var status = fault.status == FaultStatus.Repaired ? "OK" : "FEHLER";
                     text.AppendLine($"[{status}] {sensorName}: {symptom}");
                 }
             }

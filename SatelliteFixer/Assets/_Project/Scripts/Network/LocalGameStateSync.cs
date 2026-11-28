@@ -12,6 +12,12 @@ namespace SatelliteFixer.Network
     {
         public override bool IsHost => true;
 
+        void Start()
+        {
+            // Both roles live in the same process, so the "peer" is always there.
+            OnPeerConnectionChanged(true);
+        }
+
         public override void PublishState(GameState state)
         {
             OnStateReceived(JsonUtility.FromJson<GameState>(JsonUtility.ToJson(state)));
@@ -20,6 +26,11 @@ namespace SatelliteFixer.Network
         public override void SendRepairAttempt(RepairAttempt attempt)
         {
             OnRepairAttemptReceived(attempt);
+        }
+
+        public override void SendClientReady()
+        {
+            OnClientReadyReceived();
         }
     }
 }

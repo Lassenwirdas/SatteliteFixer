@@ -10,7 +10,7 @@ namespace SatelliteFixer.Operator
     /// </summary>
     public class HandbookView : MonoBehaviour
     {
-        [SerializeField, Tooltip("Scenario manager that lists the available satellites.")]
+        [SerializeField, Tooltip("Scenario manager that lists the available satellites. Uses the session's one if empty.")]
         ScenarioManager m_ScenarioManager;
 
         [SerializeField, Tooltip("Text the handbook page is written to.")]
@@ -21,7 +21,11 @@ namespace SatelliteFixer.Operator
         /// </summary>
         public void ShowSatellite(int satelliteIndex)
         {
-            var satellites = m_ScenarioManager.Satellites;
+            var scenarios = m_ScenarioManager != null ? m_ScenarioManager : ScenarioManager.Instance;
+            if (scenarios == null)
+                return;
+
+            var satellites = scenarios.Satellites;
             if (satelliteIndex < 0 || satelliteIndex >= satellites.Count || satellites[satelliteIndex] == null)
                 return;
 
